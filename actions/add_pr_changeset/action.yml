@@ -64,7 +64,7 @@ runs:
         git config --global user.name "${{ inputs.commit-user }}"
         git config --global user.email "${{ inputs.commit-email }}"
         git add $CHANGESET_FILE
-        git commit -m "${{ inputs.message }}"
+        git commit -m "${{ inputs.commit-message }}"
         git push
         echo "created=true" >> $GITHUB_OUTPUT
       env:
