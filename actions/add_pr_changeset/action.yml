@@ -1,0 +1,66 @@
+name: Add PR changeset
+description: Add PR changeset if it doesn't exist. changeset-bot must be active.
+
+inputs:
+  package-name:
+    required: true
+    description: "Azure Static Web Apps API token"
+  version-update:
+    required: true
+    description: "Version update of the package: major, minor, patch"
+  message:
+    required: true
+    description: "Changeset & commit message"
+  token:
+    required: false
+    description: "GitHub token"
+  commit-message:
+    required: true
+    description: "Commit message"
+  commit-user:
+    required: true
+    description: "Commit user"
+  commit-email:
+    required: true
+    description: "Commit email"
+outputs:
+  created:
+    description: "Whether the changeset was created"
+    value: ${{ steps.create-comment.outputs.created }}
+  exists:
+    description: "Whether the changeset already existed"
+    value: ${{ steps.exists-comment.outputs.exists }}
+
+runs:
+  using: "composite"
+  steps:
+    - uses: peter-evans/find-comment@v3
+      id: find-comment
+      with:
+        comment-author: "changeset-bot[bot]"
+        body-includes: "Changeset detected"
+
+    - id: create-comment
+      if: steps.find-comment.outputs.comment-id == ''
+      shell: bash
+      run: |
+        mkdir -p .changeset
+        CHANGESET_FILE="./.changeset/$(uuidgen).md"
+        echo "---" >> $CHANGESET_FILE
+        echo "${{ inputs.package-name }}: ${{ inputs.version-update }}" >> $CHANGESET_FILE
+        echo "---" >> $CHANGESET_FILE
+        echo "" >> $CHANGESET_FILE
+        echo "${{ inputs.changeset-message }}" >> $CHANGESET_FILE
+        git config --global user.name "${{ inputs.commit-user }}"
+        git config --global user.email "${{ inputs.commit-email }}"
+        git add $CHANGESET_FILE
+        git commit -m "${{ inputs.message }}"
+        git push
+        echo "created=true" >> $GITHUB_OUTPUT
+      env:
+        GITHUB_TOKEN: ${{ inputs.token || secrets.GITHUB_TOKEN }}
+
+    - id: exists-comment
+      if: steps.find-comment.outputs.comment-id != ''
+      shell: bash
+      run: echo "exists=true" >> $GITHUB_OUTPUT
