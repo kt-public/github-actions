@@ -58,7 +58,7 @@ runs:
         git push
         echo "created=true" >> $GITHUB_OUTPUT
       env:
-        GITHUB_TOKEN: ${{ inputs.token || $GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ inputs.token }}
 
     - id: exists-comment
       if: steps.find-comment.outputs.comment-id != ''
