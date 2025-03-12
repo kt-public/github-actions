@@ -8,7 +8,7 @@ inputs:
   version-update:
     required: true
     description: "Version update of the package: major, minor, patch"
-  message:
+  changeset-message:
     required: true
     description: "Changeset & commit message"
   token:
