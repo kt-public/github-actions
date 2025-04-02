@@ -62,7 +62,7 @@ runs:
             echo "" >> $CHANGESET_FILE
           fi
           # append to changeset file
-          if [ -n "$DEP_PREV_VERSION" ] || [ -n "$DEP_NEW_VERSION" ]; then
+          if [ -n "$DEP_PREV_VERSION" ] && [ -n "$DEP_NEW_VERSION" ]; then
             UPDATE_STRING="dependabot: update $DEP_NAME from $DEP_PREV_VERSION to $DEP_NEW_VERSION"
           else
             UPDATE_STRING="dependabot: update $DEP_NAME"
