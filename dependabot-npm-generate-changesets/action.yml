@@ -4,6 +4,9 @@ description: Add/update changeset files for Dependabot PR.
   It creates a changeset files in the `.changeset` directory.
 
 inputs:
+  token:
+    required: false
+    description: "GitHub token"
   updated-dependencies-json:
     required: true
     description: "JSON string with updated dependencies from dependabot/fetch-metadata action"
@@ -12,6 +15,9 @@ inputs:
     description: "Map version updates from dependabot/fetch-metadata action to changeset types"
     default: '{"semver-patch": "patch", "semver-minor": "patch", "semver-major": "patch"}'
 outputs:
+  updated-dependencies-json:
+    description: "Json array of updated dependencies"
+    value: ${{ steps.metadata.outputs.updated-dependencies-json }}
   changesets-json:
     description: "Json array of changeset files created or updated"
     value: ${{ steps.generate-changesets.outputs.changesets-json }}
@@ -20,6 +26,7 @@ runs:
   using: "composite"
   steps:
     - id: generate-changesets
+      if: steps.find-comment.outputs.comment-id == ''
       shell: bash
       run: |
         declare changesets_json="[]"
@@ -46,36 +53,25 @@ runs:
           # replace / with - in DEP_NAME
           DEP_NAME_CHANGESET=${DEP_NAME//\//-}
           if [ "$PKG_DIR" = "." ]; then
-            CHANGESET_FILE="./.changeset/${PKG_NAME}-${DEP_NAME_CHANGESET}.md"
+            CHANGESET_FILE="./.changeset/${PKG_NAME}-${DEP_NAME_CHANGESET}-${{ github.event.number }}.md"
           else
             # replace / with - in PKG_DIR
             PKG_DIR_CHANGESET=${PKG_DIR//\//-}
-            CHANGESET_FILE="./.changeset/${PKG_DIR_CHANGESET}-${PKG_NAME}-${DEP_NAME_CHANGESET}.md"
+            CHANGESET_FILE="./.changeset/${PKG_DIR_CHANGESET}-${PKG_NAME}-${DEP_NAME_CHANGESET}-${{ github.event.number }}.md"
           fi
-          # if file does not exist, create it
-          # if it exists, append to it
-          if [ ! -f $CHANGESET_FILE ]; then
-            echo "File $CHANGESET_FILE does not exist, creating it"
-            echo "---" >> $CHANGESET_FILE
-            echo "$PKG_NAME: $DEP_CHANGESET_TYPE" >> $CHANGESET_FILE
-            echo "---" >> $CHANGESET_FILE
-            echo "" >> $CHANGESET_FILE
-          fi
-          # append to changeset file
+          # Always overwrite changeset file in the beginning - '>' will create the file if it doesn't exist
+          echo "---" > $CHANGESET_FILE
+          echo "$PKG_NAME: $DEP_CHANGESET_TYPE" >> $CHANGESET_FILE
+          echo "---" >> $CHANGESET_FILE
+          echo "" >> $CHANGESET_FILE
           if [ -n "$DEP_PREV_VERSION" ] && [ -n "$DEP_NEW_VERSION" ]; then
             UPDATE_STRING="dependabot: update $DEP_NAME from $DEP_PREV_VERSION to $DEP_NEW_VERSION"
           else
             UPDATE_STRING="dependabot: update $DEP_NAME"
           fi
-          # Check if $UPDATE_STRING is already in the file
-          if grep -q "$UPDATE_STRING" $CHANGESET_FILE; then
-            echo "Update string already in file $CHANGESET_FILE, skipping"
-          else
-            echo "Update string not in file $CHANGESET_FILE, adding it"
-            echo "$UPDATE_STRING" >> $CHANGESET_FILE
-            # append output - json array of created or updated changeset files
-            changesets_json=$(echo $changesets_json | jq --arg file $CHANGESET_FILE '. + [$file]')
-          fi
+          echo "$UPDATE_STRING" >> $CHANGESET_FILE
+          # append output - json array of created or updated changeset files
+          changesets_json=$(echo $changesets_json | jq --arg file $CHANGESET_FILE '. + [$file]')
         done
         changesets_json=$(echo $changesets_json | jq -c '.')
         echo "changesets-json=$changesets_json" >> $GITHUB_OUTPUT
