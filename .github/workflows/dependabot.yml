@@ -56,11 +56,11 @@ jobs:
           # Check if there are any changes to commit in the .changeset directory
           if [ -z "$(git status --porcelain)" ]; then
             echo "No changes to commit"
-            exit 0
+          else
+            git add .changeset
+            git commit -m "Add changesets for Dependabot PR"
+            git push
           fi
-          git add .changeset
-          git commit -m "Add changesets for Dependabot PR"
-          git push
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
 
