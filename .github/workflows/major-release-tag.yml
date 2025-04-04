@@ -34,6 +34,8 @@ jobs:
       - name: Get major version num and update tag
         run: |
           VERSION=${GITHUB_REF#refs/tags/}
+          echo "Version: ${VERSION}"
           MAJOR=${VERSION%%.*}
+          echo "Major version: ${MAJOR}"
           git tag -fa "${MAJOR}" -m 'Update major version tag'
           git push origin "${MAJOR}" --force
