@@ -37,8 +37,8 @@ runs:
     - id: app-token
       uses: actions/create-github-app-token@v1
       with:
-        app-id: ${{ secrets.WORKFLOW_APP_ID }}
-        private-key: ${{ secrets.WORKFLOW_APP_PRIVATE_KEY }}
+        app-id: ${{ inputs.app-id }}
+        private-key: ${{ inputs.private-key }}
 
     - id: get-user-id
       shell: bash
