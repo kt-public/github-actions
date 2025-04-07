@@ -57,7 +57,7 @@ jobs:
         
         # first check that there are only dependabot changeset files
         run: |
-          changeset_files=$(ls .changeset/*.md | grep -v README.md)
+          changeset_files=$(ls .changeset/*.md | grep -v README.md || true)
           # check if there are any changeset files
           if [ -z "$changeset_files" ]; then
             echo "No changeset files found"
@@ -113,6 +113,6 @@ jobs:
         run: |
           pr_number=${{ steps.check-pr.outputs.pr_number }}
           echo "Merging PR #$pr_number"
-          # gh pr merge $pr_number --auto --squash --delete-branch
+          gh pr merge $pr_number --auto --squash --delete-branch
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
