@@ -1,4 +1,4 @@
-name: Dependabot Changeset auto-release
+name: Dependabot auto-release
 
 on:
   workflow_call:
