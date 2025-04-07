@@ -53,19 +53,55 @@ jobs:
 
       - name: Check for the highest Changeset version
         id: check-changeset
+        # Get the highest version in .changeset/*.md files
+        # Make sure to exclude README.md
+        # Dependabot changeset files are named like this: <package-name>-<dependency-name>-<PR-number>.md
+        # Dependabot changeset files contain the following example content:
+        # ---
+        # '<package-name': 'patch',
+        # ---
+        #
+        # dependabot: update @eslint/js
+        # OR
+        # dependabot: update @eslint/js to 8.1.0
+        # OR
+        # dependabot: update @eslint/js from 8.0.0 to 8.1.0
+        # We need to make sure that if other changeset files are present, then no auto-release happens
+        # if the highest version is not patch, then also no auto-release happens
+        
+        # first check that there are only dependabot changeset files
         run: |
+          changeset_files=$(ls .changeset/*.md | grep -v README.md)
+          # check if there are any changeset files
+          if [ -z "$changeset_files" ]; then
+            echo "No changeset files found"
+            echo "highest_version=none" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # check if there are only dependabot changeset files
+          # strip header part from changeset files:
+          # ---
+          # '<package-name': 'patch',
+          # ---
+          # strip empty lines
+          # and check if the rest of content contains only "dependabot: ..." lines
+          for file in $changeset_files; do
+            content=$(sed -e '1,/^---$/d' "$file" | sed '/^[[:space:]]*$/d')
+            if ! echo "$content" | grep -q "^dependabot: "; then
+              echo "Non-dependabot changeset file found: $file"
+              echo "highest_version=none" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          done
+
+          # if we are here, then all changeset files are dependabot changeset files
           # Get the highest version in .changeset/*.md files
           highest_version=$(ls .changeset/*.md | grep -v README.md | xargs -I {} sh -c 'cat {} | grep -E "(patch|minor|major)"' | awk '
             /patch/ { print 1, $0 }     
             /minor/ { print 2, $0 }     
             /major/ { print 3, $0 }     
           ' | sort -nr | head -n 1 | awk '{ print $3 }')
-          if [ -z "$highest_version" ]; then
-            echo "No changeset version found"
-            highest_version="none"
-          fi
-          echo "Highest version: $highest_version"
-          echo "highest_version=$highest_version" >> "$GITHUB_OUTPUT"
 
       - name: Enable auto-merge for Changeset PR
         if: steps.check-pr.outputs.pr_number != '0' && steps.check-changeset.outputs.highest_version == 'patch'
