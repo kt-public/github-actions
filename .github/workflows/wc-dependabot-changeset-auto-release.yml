@@ -41,7 +41,7 @@ jobs:
         id: check-changeset
         # Get the highest version in .changeset/*.md files
         # Make sure to exclude README.md
-        # Dependabot changeset files are named like this: <package-name>-<dependency-name>-<PR-number>.md
+        # Dependabot changeset files are named like this: <directory>-<package-name>-<dependency-name>-<PR-number>.md
         # Dependabot changeset files contain the following example content:
         # ---
         # '<package-name': 'patch',
@@ -68,7 +68,7 @@ jobs:
           # check if there are only dependabot changeset files
           # strip header part from changeset files:
           # ---
-          # '<package-name': 'patch',
+          # '<package-name>': 'patch',
           # ---
           # strip empty lines
           # and check if the rest of content contains only "dependabot: ..." lines
@@ -91,7 +91,7 @@ jobs:
           echo "Highest version: $highest_version"
           echo "highest_version=$highest_version" >> "$GITHUB_OUTPUT"
 
-      - name: Check for the open Changeset PR
+      - name: Check for the open Changeset Release PR
         id: check-pr
         if: steps.check-changeset.outputs.highest_version == 'patch'
         run: |
@@ -106,7 +106,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
-      - name: Enable auto-merge for Changeset PR
+      - name: Enable auto-merge for Changeset Release PR
         if: >-
           steps.check-changeset.outputs.highest_version == 'patch' &&
           steps.check-pr.outputs.pr_number != ''

@@ -35,12 +35,31 @@ runs:
           _jq() {
             echo ${dep} | base64 --decode | jq -r ${1}
           }
-          PKG_DIR=$(_jq '.directory')
-          PKG_DIR=${PKG_DIR:1}
-          if [ -z "$PKG_DIR" ]; then
+          UPDATE_PKG_DIR=$(_jq '.directory')
+          UPDATE_PKG_DIR_PREP=$UPDATE_PKG_DIR
+          UPDATE_PKG_DIR_PREP=${UPDATE_PKG_DIR_PREP#./}
+          UPDATE_PKG_DIR_PREP=${UPDATE_PKG_DIR_PREP#/}
+          if [ -z "$UPDATE_PKG_DIR_PREP" ]; then
             # if PKG_DIR is empty, set it to the current directory
-            PKG_DIR="."
+            UPDATE_PKG_DIR_PREP="."
           fi
+          # Loop over the workspaces array, find matching workspace
+          # If not found, set PKG_DIR to the current directory
+          # This is to support monorepos with workspaces
+          # and to support packages that are not in a workspace
+          FOUND_PKG_DIR="."
+          # check that UPDATE_PKG_DIR_PREP != "."
+          if [[ "$UPDATE_PKG_DIR_PREP" != "." ]]; then
+            for workspace in $(jq -r '.workspaces[]' ./package.json); do
+              # Check if the workspace matches the UPDATE_PKG_DIR
+              if [[ "$UPDATE_PKG_DIR_PREP" == "$workspace" || "./$UPDATE_PKG_DIR_PREP" == "$workspace" ]]; then
+                # If it matches, set FOUND_PKG_DIR to the workspace
+                FOUND_PKG_DIR=$workspace
+                break
+              fi
+            done
+          fi
+          PKG_DIR=$FOUND_PKG_DIR
           PKG_JSON="$PKG_DIR/package.json"
           PKG_NAME=$(jq -r '.name' $PKG_JSON)
           DEP_NAME=$(_jq '.dependencyName')
@@ -53,11 +72,11 @@ runs:
           # replace / with - in DEP_NAME
           DEP_NAME_CHANGESET=${DEP_NAME//\//-}
           if [ "$PKG_DIR" = "." ]; then
-            CHANGESET_FILE="./.changeset/${PKG_NAME}-${DEP_NAME_CHANGESET}-${{ github.event.number }}.md"
+            CHANGESET_FILE="./.changeset/${{ github.event.number }}-${PKG_NAME}-${DEP_NAME_CHANGESET}.md"
           else
             # replace / with - in PKG_DIR
             PKG_DIR_CHANGESET=${PKG_DIR//\//-}
-            CHANGESET_FILE="./.changeset/${PKG_DIR_CHANGESET}-${PKG_NAME}-${DEP_NAME_CHANGESET}-${{ github.event.number }}.md"
+            CHANGESET_FILE="./.changeset/${{ github.event.number }}-${PKG_DIR_CHANGESET}-${PKG_NAME}-${DEP_NAME_CHANGESET}.md"
           fi
           # Always overwrite changeset file in the beginning - '>' will create the file if it doesn't exist
           echo "---" > $CHANGESET_FILE
@@ -65,9 +84,9 @@ runs:
           echo "---" >> $CHANGESET_FILE
           echo "" >> $CHANGESET_FILE
           if [ -n "$DEP_PREV_VERSION" ] && [ -n "$DEP_NEW_VERSION" ]; then
-            UPDATE_STRING="dependabot: update $DEP_NAME from $DEP_PREV_VERSION to $DEP_NEW_VERSION"
+            UPDATE_STRING="dependabot: directory '$UPDATE_PKG_DIR', update $DEP_NAME from $DEP_PREV_VERSION to $DEP_NEW_VERSION"
           else
-            UPDATE_STRING="dependabot: update $DEP_NAME"
+            UPDATE_STRING="dependabot: directory '$UPDATE_PKG_DIR', update $DEP_NAME"
           fi
           echo "$UPDATE_STRING" >> $CHANGESET_FILE
           # append output - json array of created or updated changeset files
