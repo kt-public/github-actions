@@ -44,7 +44,7 @@ jobs:
         # Dependabot changeset files are named like this: <directory>-<package-name>-<dependency-name>-<PR-number>.md
         # Dependabot changeset files contain the following example content:
         # ---
-        # '<package-name': 'patch',
+        # '<package-name>': 'patch',
         # ---
         #
         # dependabot: update @eslint/js
