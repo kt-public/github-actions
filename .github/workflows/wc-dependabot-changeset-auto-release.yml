@@ -47,11 +47,7 @@ jobs:
         # '<package-name>': 'patch',
         # ---
         #
-        # dependabot: directory '/', update @eslint/js
-        # OR
-        # dependabot: directory '/demo', update @eslint/js to 8.1.0
-        # OR
-        # dependabot: directory '/other-package', update @eslint/js from 8.0.0 to 8.1.0
+        # dependabot: ...
         # We need to make sure that if other changeset files are present, then no auto-release happens
         # if the highest version is not patch, then also no auto-release happens
         
