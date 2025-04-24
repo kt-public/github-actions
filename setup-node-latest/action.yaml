@@ -44,7 +44,7 @@ runs:
   steps:
     - id: max-node-version
       shell: bash
-      run: echo "version=$(echo '${{ inputs.matrx-node-version }}' | jq -r '.[] | tostring' | sort -r | head -n 1)" >> "$GITHUB_OUTPUT"
+      run: echo "version=$(echo '${{ inputs.matrix-node-version }}' | jq -r '.[] | tostring' | sort -r | head -n 1)" >> "$GITHUB_OUTPUT"
 
     - id: setup-node
       uses: actions/setup-node@v4
